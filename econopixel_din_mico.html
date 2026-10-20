@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EconoPixel: Aragonia en Crisis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #12131c;
+            --panel-bg: #1e2238;
+            --panel-alt: #282e4d;
+            --border-light: #5c699e;
+            --border-dark: #0b0d14;
+            --accent: #fbd000;
+            --danger: #e52521;
+            --success: #43b047;
+            --info: #009bd6;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background-color: var(--bg-dark);
+            color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Efecto retro sutil */
+        .crt::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%);
+            background-size: 100% 4px;
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        .pixel-box {
+            background-color: var(--panel-bg);
+            border: 4px solid;
+            border-top-color: var(--border-light);
+            border-left-color: var(--border-light);
+            border-bottom-color: var(--border-dark);
+            border-right-color: var(--border-dark);
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+        }
+
+        .pixel-btn {
+            background-color: var(--panel-alt);
+            color: #ffffff;
+            border: 3px solid;
+            border-top-color: var(--border-light);
+            border-left-color: var(--border-light);
+            border-bottom-color: var(--border-dark);
+            border-right-color: var(--border-dark);
+            cursor: pointer;
+            text-transform: uppercase;
+            padding: 8px 10px;
+            font-size: 0.6rem;
+            line-height: 1.3;
+            transition: transform 0.08s, background-color 0.15s;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .pixel-btn:hover {
+            filter: brightness(1.15);
+        }
+
+        .pixel-btn:active {
+            transform: translateY(2px);
+            border-top-color: var(--border-dark);
+            border-left-color: var(--border-dark);
+        }
+
+        .pixel-btn.active-speed {
+            background-color: var(--accent);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .btn-green { background-color: #2e7d32; border-top-color: #66bb6a; border-left-color: #66bb6a; }
+        .btn-red { background-color: #c62828; border-top-color: #ef5350; border-left-color: #ef5350; }
+        .btn-yellow { background-color: #d97706; border-top-color: #fbbf24; border-left-color: #fbbf24; }
+        .btn-blue { background-color: #1565c0; border-top-color: #42a5f5; border-left-color: #42a5f5; }
+
+        .stat-bar {
+            height: 10px;
+            background-color: #0b0d14;
+            border: 2px solid #4a5580;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-fill {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .info-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background-color: var(--info);
+            color: #fff;
+            border: 2px solid #fff;
+            font-size: 9px;
+            cursor: pointer;
+            margin-left: 6px;
+            flex-shrink: 0;
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        .info-btn:hover {
+            background-color: var(--accent);
+            color: #000;
+        }
+
+        /* Contenedor de Toasts apilables */
+        #toast-container {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 330px;
+            width: calc(100vw - 32px);
+            pointer-events: none;
+        }
+
+        .toast-item {
+            background-color: rgba(20, 24, 42, 0.96);
+            border: 3px solid var(--accent);
+            color: #fff;
+            padding: 10px 12px;
+            font-size: 0.58rem;
+            line-height: 1.5;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.85);
+            animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            pointer-events: auto;
+        }
+
+        .toast-item.fade-out {
+            animation: toastOut 0.4s ease-in forwards;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateX(110%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+
+        @keyframes pulseAlert {
+            0%, 100% { border-color: #e52521; box-shadow: 0 0 0px #e52521; }
+            50% { border-color: #fbd000; box-shadow: 0 0 14px #e52521; }
+        }
+
+        .crisis-banner {
+            animation: pulseAlert 1.2s infinite;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body class="crt">
+
+    <!-- CONTENEDOR DE NOTIFICACIONES APILADAS -->
+    <div id="toast-container"></div>
+
+    <!-- MODAL DE INFORMACIÓN (i) -->
+    <div id="info-modal" class="fixed inset-0 bg-black/80 z-[120] hidden items-center justify-center p-4">
+        <div class="pixel-box max-w-md w-full p-5 relative bg-[#1a1e36]">
+            <div class="flex justify-between items-center border-b-2 border-[#5c699e] pb-3 mb-3">
+                <h3 id="info-modal-title" class="text-xs md:text-sm text-[#fbd000]">Concepto Económico</h3>
+                <button id="btn-close-info" class="pixel-btn btn-red px-2 py-1 text-xs">X</button>
+            </div>
+            <div id="info-modal-body" class="text-[11px] leading-relaxed font-sans text-gray-100 space-y-2">
+                Descripción detallada.
+            </div>
+            <div class="mt-4 text-right">
+                <button id="btn-ok-info" class="pixel-btn btn-blue px-4 py-2">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE INICIO -->
+    <div id="start-screen" class="fixed inset-0 bg-[#0d0f18] z-[100] flex flex-col items-center justify-center p-4 text-center overflow-y-auto">
+        <div class="pixel-box max-w-xl w-full p-6 md:p-8">
+            <div class="text-xs text-[#43b047] mb-2">SIMULADOR MACROECONÓMICO INTERACTIVO</div>
+            <h1 class="text-xl md:text-3xl text-[#fbd000] mb-2 drop-shadow-[3px_3px_0px_#000]">ECONOPIXEL: ARAGONIA</h1>
+            <h2 class="text-xs md:text-sm text-white mb-6">MINISTRO DE LA CRISIS</h2>
+            
+            <div class="bg-[#121526] border-2 border-[#4a5580] p-4 text-left text-[11px] md:text-xs font-sans leading-relaxed text-gray-200 mb-6 space-y-2">
+                <p>🏛️ <b>Tu Misión:</b> Gobernar la economía de la ciudad-estado de <b>Aragonia</b> durante <b>20 años</b> sin colapsar.</p>
+                <p>⚠️ <b>Desequilibrio Inicial:</b> Recibes Aragonia en problemas: los impuestos están muy altos, hay pocas fábricas y la <b>Demanda supera a la Oferta</b>, provocando <b>Escasez</b> en las tiendas.</p>
+                <p>🏘️ <b>Ciudad Viva:</b> Observa las <b>Casas</b> (que aumentan con la prosperidad), el <b>Banco Central</b>, los <b>Fabricantes</b> enviando camiones/cajas, las <b>Empresas</b> con barras de stock y los ciudadanos con bolsas de dinero (💰) o pancartas de protesta.</p>
+                <p>🌍 <b>Eventos Frecuentes y Misiones:</b> Enfrenta crisis de abasto, corridas bancarias, sequías, vencimientos de deuda e invasiones que te exigirán usar <b>Subsidios, Importaciones, Emisión de Billetes e Impuestos</b> estratégicamente.</p>
+            </div>
+
+            <button id="btn-start-game" class="pixel-btn btn-green text-xs md:text-sm py-4 px-8 font-bold">
+                ▶ GOBERNAR ARAGONIA (INICIAR)
+            </button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE FIN DE JUEGO -->
+    <div id="end-screen" class="fixed inset-0 bg-black/90 z-[110] hidden flex-col items-center justify-center p-4 text-center">
+        <div class="pixel-box max-w-lg w-full p-6">
+            <h2 id="end-title" class="text-xl md:text-2xl text-[#e52521] mb-4">FIN DEL MANDATO</h2>
+            <div id="end-desc" class="bg-[#121526] border-2 border-[#5c699e] p-4 text-xs font-sans leading-relaxed text-gray-100 mb-6">
+                Motivo del fin del juego.
+            </div>
+            <div id="end-stats" class="grid grid-cols-2 gap-2 text-[10px] mb-6 text-left bg-[#16192b] p-3 border border-[#4a5580]">
+            </div>
+            <button id="btn-restart-game" class="pixel-btn btn-green py-3 px-6 text-xs">
+                🔄 INTENTAR NUEVO MANDATO
+            </button>
+        </div>
+    </div>
+
+    <!-- INTERFAZ PRINCIPAL DEL JUEGO -->
+    <div id="game-ui" class="w-full max-w-[1360px] mx-auto p-2 md:p-3 flex-grow flex flex-col lg:flex-row gap-3">
+        
+        <!-- COLUMNA IZQUIERDA: INDICADORES MACROECONÓMICOS Y CONTROLES -->
+        <div class="w-full lg:w-[410px] flex-shrink-0 flex flex-col gap-3">
+            
+            <!-- PANEL 1: ESTADO GENERAL -->
+            <div class="pixel-box p-3 flex flex-col gap-2.5">
+                <div class="flex justify-between items-center border-b-2 border-[#4a5580] pb-2">
+                    <span class="text-[11px] text-[#fbd000]">📊 INDICADORES</span>
+                    <span class="text-[10px] bg-[#121526] px-2 py-1 border border-[#5c699e]">
+                        AÑO <span id="ui-ano" class="text-[#fbd000]">1</span>/20 (Mes <span id="ui-mes">1</span>)
+                    </span>
+                </div>
+
+                <!-- Tesoro y Precios -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-[#141728] p-2 border border-[#394266]">
+                        <div class="flex items-center justify-between text-[9px] text-gray-300 mb-1">
+                            <span>Tesoro</span>
+                            <button class="info-btn" data-info="tesoro">i</button>
+                        </div>
+                        <div id="ui-tesoro" class="text-xs text-[#43b047] font-bold">$3200</div>
+                    </div>
+                    <div class="bg-[#141728] p-2 border border-[#394266]">
+                        <div class="flex items-center justify-between text-[9px] text-gray-300 mb-1">
+                            <span>Precios</span>
+                            <button class="info-btn" data-info="precios">i</button>
+                        </div>
+                        <div id="ui-precios" class="text-xs text-[#fbd000] font-bold">$135 (Altos)</div>
+                    </div>
+                </div>
+
+                <!-- Impuesto y Competencia/Casas -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-[#141728] p-2 border border-[#394266]">
+                        <div class="flex items-center justify-between text-[9px] text-gray-300 mb-1">
+                            <span>Impuesto</span>
+                            <button class="info-btn" data-info="impuesto">i</button>
+                        </div>
+                        <div id="ui-impuesto" class="text-xs text-white font-bold">30%</div>
+                    </div>
+                    <div class="bg-[#141728] p-2 border border-[#394266]">
+                        <div class="flex items-center justify-between text-[9px] text-gray-300 mb-1">
+                            <span>Competencia</span>
+                            <button class="info-btn" data-info="competencia">i</button>
+                        </div>
+                        <div id="ui-competencia" class="text-[9px] text-white leading-tight">1 Fáb. / 2 Emp. / 3 Casas</div>
+                    </div>
+                </div>
+
+                <!-- MERCADO: OFERTA VS DEMANDA Y EQUILIBRIO -->
+                <div class="bg-[#141728] p-2.5 border border-[#394266] flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center text-[9px]">
+                        <span class="flex items-center text-[#009bd6]">
+                            Mercado y Equilibrio
+                            <button class="info-btn" data-info="equilibrio">i</button>
+                        </span>
+                        <span id="ui-equilibrio-badge" class="px-1.5 py-0.5 text-[8px] bg-[#e52521] text-white">
+                            DESEQUILIBRIO
+                        </span>
+                    </div>
+                    <div class="flex justify-between text-[9px] text-gray-200 mt-1">
+                        <span>Oferta: <b id="ui-oferta" class="text-[#43b047]">35</b></span>
+                        <span>Demanda: <b id="ui-demanda" class="text-[#fbd000]">65</b></span>
+                    </div>
+                    <div class="w-full h-3 bg-[#0b0d14] border border-[#5c699e] flex overflow-hidden">
+                        <div id="bar-oferta" class="bg-[#43b047] h-full transition-all" style="width: 35%;"></div>
+                        <div id="bar-demanda" class="bg-[#fbd000] h-full transition-all" style="width: 65%;"></div>
+                    </div>
+                </div>
+
+                <!-- ESCASEZ -->
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between items-center text-[9px]">
+                        <span class="flex items-center text-[#ff9800]">
+                            Escasez de Productos
+                            <button class="info-btn" data-info="escasez">i</button>
+                        </span>
+                        <span id="ui-escasez" class="text-[10px] font-bold text-[#ff9800]">42% (Alerta)</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div id="bar-escasez" class="stat-fill bg-[#ff9800]" style="width: 42%;"></div>
+                    </div>
+                </div>
+
+                <!-- INFLACIÓN -->
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between items-center text-[9px]">
+                        <span class="flex items-center text-[#ef5350]">
+                            Inflación Acumulada
+                            <button class="info-btn" data-info="inflacion">i</button>
+                        </span>
+                        <span id="ui-inflacion" class="text-[10px] font-bold text-[#ef5350]">18.0%</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div id="bar-inflacion" class="stat-fill bg-[#e52521]" style="width: 18%;"></div>
+                    </div>
+                </div>
+
+                <!-- FELICIDAD -->
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between items-center text-[9px]">
+                        <span class="flex items-center text-[#66bb6a]">
+                            Felicidad de Consumidores
+                            <button class="info-btn" data-info="felicidad">i</button>
+                        </span>
+                        <span id="ui-felicidad" class="text-[10px] font-bold text-[#fbd000]">48%</span>
+                    </div>
+                    <div class="stat-bar">
+                        <div id="bar-felicidad" class="stat-fill bg-[#43b047]" style="width: 48%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL 2: DECISIONES DEL GOBIERNO -->
+            <div class="pixel-box p-3 flex flex-col gap-2.5 flex-grow">
+                <div class="flex justify-between items-center border-b-2 border-[#4a5580] pb-1.5">
+                    <span class="text-[10px] text-[#fbd000]">🏛️ POLÍTICAS DEL GOBIERNO</span>
+                    <button class="info-btn" data-info="gobierno">i</button>
+                </div>
+
+                <!-- Ajustar Impuesto -->
+                <div class="bg-[#141728] p-2 border border-[#394266]">
+                    <div class="flex justify-between items-center text-[9px] mb-1.5 text-gray-300">
+                        <span>1. Tasa de Impuesto (Recaudación vs Consumo)</span>
+                        <button class="info-btn" data-info="impuesto">i</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btn-tax-down" class="pixel-btn btn-green">-5% Impuesto</button>
+                        <button id="btn-tax-up" class="pixel-btn btn-red">+5% Impuesto</button>
+                    </div>
+                </div>
+
+                <!-- Producción, Empresas y Subsidios -->
+                <div class="bg-[#141728] p-2 border border-[#394266]">
+                    <div class="flex justify-between items-center text-[9px] mb-1.5 text-gray-300">
+                        <span>2. Fomento a Fabricantes y Empresas (Oferta)</span>
+                        <button class="info-btn" data-info="fabricantes">i</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btn-add-factory" class="pixel-btn btn-blue">
+                            🏭 Nuevo Fabricante (-$1500)
+                        </button>
+                        <button id="btn-add-shop" class="pixel-btn btn-blue">
+                            🏪 Subsidiar Empresa (-$1200)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subsidios Directos y Abastecimiento -->
+                <div class="bg-[#141728] p-2 border border-[#394266]">
+                    <div class="flex justify-between items-center text-[9px] mb-1.5 text-gray-300">
+                        <span>3. Subsidios al Consumidor y Abasto</span>
+                        <button class="info-btn" data-info="subsidios">i</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btn-subsidy-people" class="pixel-btn btn-green">
+                            🎁 Subsidio Social (-$1000)
+                        </button>
+                        <button id="btn-import-goods" class="pixel-btn btn-yellow">
+                            🚢 Importar Stock (-$900)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Emisión Monetaria -->
+                <div class="bg-[#141728] p-2 border border-[#394266]">
+                    <div class="flex justify-between items-center text-[9px] mb-1.5 text-gray-300">
+                        <span>4. Banco Central de Aragonia (Liquidez)</span>
+                        <button class="info-btn" data-info="emision">i</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button id="btn-print-1k" class="pixel-btn btn-yellow">
+                            💵 Imprimir $1,500
+                        </button>
+                        <button id="btn-print-5k" class="pixel-btn btn-red">
+                            🖨️ Imprimir $4,500
+                        </button>
+                        <button id="btn-bonds" class="pixel-btn btn-blue">
+                            ❄️ Bonos (-$900)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: ESCENA DINÁMICA Y EVENTOS -->
+        <div class="flex-grow flex flex-col gap-2 min-h-[460px]">
+            
+            <!-- BARRA SUPERIOR DE VELOCIDAD Y LEYENDA -->
+            <div class="pixel-box p-2 flex flex-wrap justify-between items-center gap-2">
+                <div class="flex flex-wrap items-center gap-3 text-[8px] md:text-[9px] text-gray-200">
+                    <span class="text-[#fbd000] font-bold">🏰 ARAGONIA</span>
+                    <span>🏠 Casas: <b id="lbl-houses" class="text-[#fbd000]">3</b></span>
+                    <span>🏭 Fábricas: <b id="lbl-factories" class="text-[#009bd6]">1</b></span>
+                    <span>🏪 Empresas: <b id="lbl-shops" class="text-[#43b047]">2</b></span>
+                    <span>😠 Protestas: <b id="lbl-protestors" class="text-[#e52521]">2</b></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[8px] text-gray-400 mr-1">VELOCIDAD:</span>
+                    <button id="btn-pause" class="pixel-btn px-2 py-1">|| Pausa</button>
+                    <button id="btn-x1" class="pixel-btn px-2 py-1 active-speed">▶ x1</button>
+                    <button id="btn-x2" class="pixel-btn px-2 py-1">▶▶ x2</button>
+                    <button id="btn-x4" class="pixel-btn px-2 py-1">⚡ x4</button>
+                </div>
+            </div>
+
+            <!-- BANNER DE EVENTO / CRISIS ACTIVA CON INSTRUCCIÓN AL JUGADOR -->
+            <div id="crisis-banner" class="pixel-box crisis-banner bg-[#2b1216] p-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                <div class="space-y-1">
+                    <div id="crisis-title" class="text-[10px] text-[#fbd000] font-bold">
+                        ⚠️ CRISIS INICIAL EN ARAGONIA: DESEQUILIBRIO Y ESCASEZ
+                    </div>
+                    <div id="crisis-instruction" class="text-[10px] font-sans text-gray-100">
+                        <b>Acción requerida:</b> Baja el <b>Impuesto a 20% o menos</b> y construye al menos <b>2 Fabricantes</b> o <b>Importa Stock</b> para eliminar la escasez.
+                    </div>
+                </div>
+                <div id="crisis-timer" class="text-[9px] bg-black/60 px-2.5 py-1.5 border border-[#fbd000] text-[#fbd000] whitespace-nowrap">
+                    Meta Activa
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DEL CANVAS DE LA CIUDAD -->
+            <div id="canvas-container" class="pixel-box flex-grow relative overflow-hidden min-h-[380px] bg-[#2d5a3c]">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOSARIO DE INFORMACIÓN (i) ---
+        const INFO_DATA = {
+            tesoro: {
+                title: "💰 El Tesoro Nacional",
+                body: "<p>Es el dinero público que administra tu <b>Gobierno</b>.</p><p><b>¿Cómo sube?</b> Cada vez que un ciudadano compra productos en una Empresa, el Estado recauda un porcentaje según el <b>Impuesto</b> actual.</p><p><b>¿Cómo baja?</b> Al construir Fabricantes, subsidiar Empresas, importar mercancía o dar Subsidios Sociales.</p><p><i>Si permaneces en números negativos (bancarrota) por más de 2 años, serás destituido.</i></p>"
+            },
+            impuesto: {
+                title: "📜 El Impuesto",
+                body: "<p>Es el porcentaje que el Gobierno cobra sobre las compras y la actividad empresarial.</p><p><b>Impuesto Alto (>25%):</b> Llena rápido el Tesoro, pero quita dinero a los Consumidores (baja la Demanda), enoja a la población y puede hacer quebrar Empresas.</p><p><b>Impuesto Bajo (5% - 15%):</b> Estimula el consumo, aumenta la Felicidad y atrae prosperidad, aunque recaudas menos por compra.</p>"
+            },
+            precios: {
+                title: "🏷️ Nivel de Precios",
+                body: "<p>Representa cuánto cuestan los bienes básicos en el Mercado.</p><p><b>¿De qué depende?</b> De la relación entre <b>Oferta y Demanda</b>, la <b>Competencia</b> y la <b>Inflación</b>. Si hay <b>Escasez</b> (tiendas vacías) o pocas Empresas, los precios suben drásticamente perjudicando a los consumidores.</p>"
+            },
+            competencia: {
+                title: "🏭 Competencia, Empresas y Casas",
+                body: "<p>Muestra la infraestructura viva de <b>Aragonia</b>:</p><p>• <b>Fabricantes (Fábricas):</b> Producen cajas de mercancía (Oferta) y las envían a las tiendas.</p><p>• <b>Empresas (Tiendas):</b> Venden los bienes al público. Más empresas generan <b>Competencia</b>, lo que modera los precios.</p><p>• <b>Casas:</b> Representan el crecimiento de Aragonia. Se inicia con 3 casas fijas y <b>se construyen más automáticamente</b> cuando la gente prospera.</p>"
+            },
+            equilibrio: {
+                title: "⚖️ Oferta, Demanda y Equilibrio",
+                body: "<p>• <b>Oferta:</b> Cantidad de bienes producidos por los Fabricantes y disponibles en Empresas.</p><p>• <b>Demanda:</b> Cantidad de productos que los Consumidores desean y pueden comprar.</p><p>• <b>Equilibrio:</b> Se alcanza cuando la Oferta y la Demanda están parejas (diferencia menor a 12 puntos). Lograr el <b>Equilibrio</b> estabiliza los precios, reduce la inflación y otorga bonos al Tesoro de Aragonia.</p>"
+            },
+            escasez: {
+                title: "🚫📦 La Escasez",
+                body: "<p>Ocurre cuando la <b>Demanda supera a la Oferta</b> y los estantes de las Empresas se quedan sin mercancía (barra de Stock vacía).</p><p><b>En el mapa:</b> Verás letreros de <b>'¡ESCASEZ!'</b> sobre las tiendas y ciudadanos saliendo furiosos con las manos vacías.</p><p><b>¿Cómo se soluciona?</b> Construyendo más <b>Fabricantes</b>, subsidiando Empresas o usando <b>Importar Stock</b> de emergencia.</p>"
+            },
+            inflacion: {
+                title: "📈 La Inflación",
+                body: "<p>Es la pérdida del poder adquisitivo de la moneda de Aragonia y la subida descontrolada de precios.</p><p><b>Causas principales:</b> Imprimir billetes sin respaldo productivo y sufrir una alta <b>Escasez</b> prolongada.</p><p><b>¿Cómo bajarla?</b> Logrando el Equilibrio de mercado, abriendo Empresas o emitiendo <b>❄️ Bonos</b> en el Banco Central.</p><p><i>¡Si la Inflación llega al 100%, ocurre una Hiperinflación y pierdes la partida!</i></p>"
+            },
+            felicidad: {
+                title: "😊 Felicidad de los Consumidores",
+                body: "<p>Mide el bienestar social en Aragonia. Cuando es alta (>65%), los ciudadanos visten de gala, llevan <b>bolsas de dinero (💰)</b> y construyen <b>nuevas Casas</b>.</p><p>Cuando cae (<45%) por escasez, inflación o impuestos abusivos, los ciudadanos salen a marchar con <b>carteles de protesta y signos de enojo (💢)</b>.</p><p><i>Si cae a 0%, estalla una Revuelta Social y pierdes.</i></p>"
+            },
+            gobierno: {
+                title: "🏛️ Gobierno de Aragonia",
+                body: "<p>Como Ministro de Economía de Aragonia, tus botones alteran las condiciones macroeconómicas en tiempo real. Presta atención a las <b>Crisis y Eventos</b> en el banner superior: tienen un plazo en meses y te exigirán usar subsidios, abasto, emisión monetaria o ajustes fiscales.</p>"
+            },
+            fabricantes: {
+                title: "🏭 Fabricantes vs 🏪 Empresas",
+                body: "<p>• <b>Nuevo Fabricante:</b> Instala una planta industrial que produce lotes de mercancía constantemente y abastece a todas las tiendas.</p><p>• <b>Subsidiar Empresa:</b> Abre un nuevo comercio minorista con inventario inicial, aumentando la Competencia y reduciendo precios.</p>"
+            },
+            subsidios: {
+                title: "🎁 Subsidios y 🚢 Importación",
+                body: "<p>• <b>Subsidio Social:</b> Entrega apoyo directo a las familias de Aragonia, subiendo su Felicidad (+12%) y su capacidad de compra. Es vital en crisis sociales o heladas.</p><p>• <b>Importar Stock:</b> Compra mercancía en el extranjero para llenar de inmediato el inventario de todas las tiendas (+60 stock) y frenar crisis de <b>Escasez</b>.</p>"
+            },
+            emision: {
+                title: "🖨️ Emisión Monetaria y ❄️ Bonos",
+                body: "<p>• <b>Imprimir Dinero ($1,500 / $4,500):</b> Otorga liquidez inmediata al Tesoro para pagar deudas urgentes o financiar rescates en crisis de liquidez, pero incrementa la <b>Inflación</b>.</p><p>• <b>❄️ Bonos (-$900):</b> Retira billetes circulantes del mercado para enfriar la economía y reducir la <b>Inflación en -6%</b>.</p>"
+            }
+        };
+
+        // --- ESTADO DEL JUEGO ---
+        const state = {
+            isRunning: false,
+            speed: 1,
+            ano: 1,
+            mes: 1,
+            tesoro: 3200,
+            impuesto: 30,       // Inicia alto (desequilibrio)
+            inflacion: 18.0,    // Inicia con presión inflacionaria
+            felicidad: 48.0,    // Inicia tensa
+            precios: 135,
+            oferta: 35,
+            demanda: 65,
+            escasez: 42,        // Escasez clara desde el inicio
+            enEquilibrio: false,
+            rachaEquilibrio: 0,
+            mesesBancarrota: 0,
+            activeCrisis: null,
+            crisisTimeLeft: 0,
+            monthsSinceLastCrisis: 0,
+            eventQueueIndex: 0,
+            // Contadores de decisiones tomadas durante la crisis actual
+            crisisActions: {
+                printedAmount: 0,
+                subsidiesGiven: 0,
+                importsDone: 0,
+                bondsIssued: 0,
+                factoriesAdded: 0,
+                shopsAdded: 0
+            }
+        };
+
+        function resetCrisisActions() {
+            state.crisisActions = {
+                printedAmount: 0,
+                subsidiesGiven: 0,
+                importsDone: 0,
+                bondsIssued: 0,
+                factoriesAdded: 0,
+                shopsAdded: 0
+            };
+        }
+
+        // Listas de entidades en el Canvas
+        let houses = [];
+        let factories = [];
+        let shops = [];
+        let citizens = [];
+        let cargos = [];     // Cajas que viajan de Fabricantes a Empresas
+        let particles = [];  // Emojis y textos flotantes
+
+        // Referencias del DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvas-container');
+        let cw = 800, ch = 450;
+
+        function logToast(msg, type = 'normal') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            // Limitar a máximo 4 toasts visibles para no saturar la pantalla
+            while (container.children.length >= 4) {
+                container.firstChild.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-item';
+
+            if (type === 'danger') toast.style.borderColor = '#e52521';
+            else if (type === 'success') toast.style.borderColor = '#43b047';
+            else if (type === 'info') toast.style.borderColor = '#009bd6';
+            else toast.style.borderColor = '#fbd000';
+
+            toast.innerHTML = msg;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 400);
+            }, 6500);
+        }
+
+        // Eventos para abrir y cerrar modal (i)
+        document.querySelectorAll('.info-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const key = btn.getAttribute('data-info');
+                const data = INFO_DATA[key];
+                if (data) {
+                    document.getElementById('info-modal-title').innerHTML = data.title;
+                    document.getElementById('info-modal-body').innerHTML = data.body;
+                    const modal = document.getElementById('info-modal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            });
+        });
+
+        function closeInfoModal() {
+            const modal = document.getElementById('info-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        document.getElementById('btn-close-info').addEventListener('click', closeInfoModal);
+        document.getElementById('btn-ok-info').addEventListener('click', closeInfoModal);
+
+        // --- CLASES DE EDIFICIOS ---
+        class House {
+            constructor(index) {
+                this.index = index;
+                this.w = 46;
+                this.h = 40;
+                const roofColors = ['#c0392b', '#d35400', '#8e44ad', '#2980b9', '#16a085'];
+                this.roofColor = roofColors[index % roofColors.length];
+            }
+            getPos() {
+                const availW = cw - 150; // Dejar espacio a la derecha para el Ministerio/Banco Central
+                const spacing = Math.min(72, Math.max(48, availW / Math.max(4, houses.length)));
+                return {
+                    x: 24 + this.index * spacing,
+                    y: 42
+                };
+            }
+            draw() {
+                const { x, y } = this.getPos();
+                // Sombra
+                ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                ctx.fillRect(x + 4, y + 4, this.w, this.h);
+
+                // Paredes de la casa
+                ctx.fillStyle = '#f5e6ca';
+                ctx.fillRect(x, y + 12, this.w, this.h - 12);
+
+                // Techo escalonado pixel art
+                ctx.fillStyle = this.roofColor;
+                ctx.fillRect(x - 4, y + 8, this.w + 8, 6);
+                ctx.fillRect(x, y + 2, this.w, 6);
+                ctx.fillRect(x + 6, y - 4, this.w - 12, 6);
+
+                // Puerta y ventana
+                ctx.fillStyle = '#5d4037';
+                ctx.fillRect(x + 8, y + 22, 10, 18);
+                ctx.fillStyle = '#81d4fa';
+                ctx.fillRect(x + 26, y + 20, 12, 10);
+                ctx.strokeStyle = '#3e2723';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x + 26, y + 20, 12, 10);
+            }
+        }
+
+        class Factory {
+            constructor(index) {
+                this.index = index;
+                this.w = 68;
+                this.h = 54;
+                this.prodTimer = 0;
+            }
+            getPos() {
+                return {
+                    x: 25 + this.index * 85,
+                    y: ch * 0.44 - 25
+                };
+            }
+            update(dt) {
+                this.prodTimer += dt * state.speed;
+                // Cada 3.2 segundos produce mercancía y la envía a una tienda
+                if (this.prodTimer >= 3200) {
+                    this.prodTimer = 0;
+                    if (shops.length > 0) {
+                        const pos = this.getPos();
+                        // Priorizar la tienda con menos stock
+                        let targetShop = shops.reduce((min, s) => s.stock < min.stock ? s : min, shops[0]);
+                        cargos.push({
+                            x: pos.x + this.w / 2,
+                            y: pos.y + this.h - 10,
+                            target: targetShop,
+                            amount: 25
+                        });
+                        spawnParticle(pos.x + 20, pos.y - 5, "📦+Oferta", "#66bb6a");
+                    }
+                }
+            }
+            draw() {
+                const { x, y } = this.getPos();
+                // Chimeneas
+                ctx.fillStyle = '#455a64';
+                ctx.fillRect(x + 8, y - 18, 12, 20);
+                ctx.fillRect(x + 26, y - 14, 12, 16);
+                // Humo animado
+                const smokeOffset = Math.sin(performance.now() * 0.004 + this.index) * 4;
+                ctx.fillStyle = 'rgba(200,200,200,0.6)';
+                ctx.beginPath();
+                ctx.arc(x + 14 + smokeOffset, y - 24, 6, 0, Math.PI * 2);
+                ctx.arc(x + 32 - smokeOffset, y - 22, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Nave industrial
+                ctx.fillStyle = '#607d8b';
+                ctx.fillRect(x, y, this.w, this.h);
+                ctx.fillStyle = '#37474f';
+                ctx.fillRect(x, y, this.w, 8);
+
+                // Puerta de carga
+                ctx.fillStyle = '#263238';
+                ctx.fillRect(x + 20, y + 26, 28, 28);
+                ctx.fillStyle = '#fbd000';
+                ctx.font = '7px "Press Start 2P"';
+                ctx.fillText("FAB", x + 22, y + 20);
+            }
+        }
+
+        class Shop {
+            constructor(index) {
+                this.index = index;
+                this.w = 66;
+                this.h = 52;
+                this.stock = 20; // Inicia con poco stock para reflejar desequilibrio
+                this.maxStock = 100;
+                const colors = ['#e67e22', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c'];
+                this.color = colors[index % colors.length];
+            }
+            getPos() {
+                const startX = Math.max(260, cw * 0.42);
+                const spacing = Math.min(92, (cw - startX - 30) / Math.max(2, shops.length));
+                return {
+                    x: startX + this.index * spacing,
+                    y: ch * 0.44 - 23
+                };
+            }
+            draw() {
+                const { x, y } = this.getPos();
+
+                // Edificio de la Empresa / Tienda
+                ctx.fillStyle = '#d7ccc8';
+                ctx.fillRect(x, y + 8, this.w, this.h - 8);
+
+                // Toldo a rayas
+                for (let i = 0; i < 6; i++) {
+                    ctx.fillStyle = i % 2 === 0 ? this.color : '#ffffff';
+                    ctx.fillRect(x - 3 + i * 12, y, 12, 12);
+                }
+
+                // Puerta y escaparate
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(x + 10, y + 24, 16, 28);
+                ctx.fillStyle = this.stock > 0 ? '#80deea' : '#37474f';
+                ctx.fillRect(x + 32, y + 24, 24, 18);
+
+                // Barra de Stock encima de la tienda (Visualización directa de Escasez)
+                const barW = this.w;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(x, y - 14, barW, 8);
+                const pct = Math.max(0, Math.min(1, this.stock / this.maxStock));
+                ctx.fillStyle = pct > 0.35 ? '#43b047' : pct > 0.1 ? '#fbd000' : '#e52521';
+                ctx.fillRect(x + 1, y - 13, (barW - 2) * pct, 6);
+
+                // Cartel parpadeante si no hay stock (ESCASEZ)
+                if (this.stock <= 5) {
+                    if (Math.floor(performance.now() / 350) % 2 === 0) {
+                        ctx.fillStyle = '#e52521';
+                        ctx.fillRect(x - 6, y - 30, this.w + 12, 13);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '6px "Press Start 2P"';
+                        ctx.fillText("¡ESCASEZ!", x - 2, y - 21);
+                    }
+                } else {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '6px "Press Start 2P"';
+                    ctx.fillText(`STOCK:${Math.floor(this.stock)}`, x + 2, y - 17);
+                }
+            }
+        }
+
+        // --- CLASE CIUDADANO (MÁS GRANDE, CON PASOS, CARTELES Y BOLSAS DE DINERO) ---
+        class Citizen {
+            constructor(id) {
+                this.id = id;
+                this.homeIndex = id % Math.max(1, houses.length);
+                const homePos = houses[this.homeIndex] ? houses[this.homeIndex].getPos() : { x: 60, y: 50 };
+                this.x = homePos.x + 20 + (Math.random() - 0.5) * 40;
+                this.y = ch * 0.72 + (Math.random() - 0.5) * 45;
+
+                this.vx = (Math.random() < 0.5 ? 1 : -1) * (35 + Math.random() * 20);
+                this.vy = 0;
+                this.state = 'strolling'; // 'strolling', 'going_to_shop', 'buying', 'protesting'
+                this.targetShop = null;
+                this.timer = Math.random() * 100;
+                this.buyTimer = 0;
+
+                const shirts = ['#3498db', '#9b59b6', '#e67e22', '#1abc9c', '#f39c12', '#ec407a'];
+                this.shirtColor = shirts[id % shirts.length];
+
+                const protestTexts = ["¡ESCASEZ!", "¡CARÍSIMO!", "¡NO + IMP!", "¡HAMBRE!", "¡CRISIS!"];
+                this.protestText = protestTexts[id % protestTexts.length];
+                this.hasMoneyBag = false;
+                this.isAngry = false;
+            }
+
+            update(dt) {
+                if (state.speed === 0) return;
+                const delta = (dt / 1000) * state.speed;
+                this.timer += delta * 10;
+
+                // Determinar proporción de manifestantes según enojo o escasez
+                const angerLevel = Math.max(100 - state.felicidad, state.escasez * 0.85);
+                const protestThreshold = Math.floor((angerLevel / 100) * citizens.length);
+
+                // Si el índice del ciudadano cae dentro del umbral de enojo, protesta en la calle
+                if (angerLevel > 38 && this.id < protestThreshold) {
+                    this.isAngry = true;
+                    this.hasMoneyBag = false;
+                    this.state = 'protesting';
+                    // Actualizar texto del cartel según el problema principal
+                    if (state.escasez > 35) this.protestText = "¡ESCASEZ!";
+                    else if (state.impuesto > 25) this.protestText = "¡NO + IMP!";
+                    else if (state.inflacion > 30) this.protestText = "¡INFLACIÓN!";
+                    else this.protestText = "¡PROTESTA!";
+                } else {
+                    this.isAngry = false;
+                    // Si hay abundancia (alta felicidad y baja inflación), lleva bolsa de dinero
+                    this.hasMoneyBag = (state.felicidad >= 65 && state.inflacion < 22 && state.escasez < 20);
+                    if (this.state === 'protesting') this.state = 'strolling';
+                }
+
+                // Movimiento según estado
+                if (this.state === 'protesting') {
+                    // Marcha por la avenida principal
+                    const streetY = ch * 0.76 + ((this.id % 3) - 1) * 18;
+                    this.y += (streetY - this.y) * 2 * delta;
+                    this.x += this.vx * delta * 1.15;
+                    if (this.x < 40) { this.x = 40; this.vx = Math.abs(this.vx); }
+                    if (this.x > cw - 40) { this.x = cw - 40; this.vx = -Math.abs(this.vx); }
+                } 
+                else if (this.state === 'strolling') {
+                    this.x += this.vx * delta;
+                    if (this.x < 30) { this.x = 30; this.vx = Math.abs(this.vx); }
+                    if (this.x > cw - 30) { this.x = cw - 30; this.vx = -Math.abs(this.vx); }
+
+                    // Decidir ir a comprar a una tienda
+                    if (shops.length > 0 && Math.random() < 0.012 * state.speed) {
+                        this.targetShop = shops[Math.floor(Math.random() * shops.length)];
+                        this.state = 'going_to_shop';
+                    }
+                } 
+                else if (this.state === 'going_to_shop') {
+                    if (!this.targetShop || !shops.includes(this.targetShop)) {
+                        this.state = 'strolling';
+                        return;
+                    }
+                    const shopPos = this.targetShop.getPos();
+                    const tx = shopPos.x + 18;
+                    const ty = shopPos.y + 48;
+                    const dx = tx - this.x;
+                    const dy = ty - this.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist < 8) {
+                        this.state = 'buying';
+                        this.buyTimer = 0;
+                    } else {
+                        this.vx = dx >= 0 ? Math.abs(this.vx) : -Math.abs(this.vx);
+                        this.x += (dx / dist) * 55 * delta;
+                        this.y += (dy / dist) * 55 * delta;
+                    }
+                } 
+                else if (this.state === 'buying') {
+                    this.buyTimer += dt * state.speed;
+                    if (this.buyTimer >= 700) {
+                        // Intentar comprar del stock de la tienda
+                        if (this.targetShop && this.targetShop.stock >= 4) {
+                            this.targetShop.stock -= 4;
+                            const gananciaImpuesto = (state.precios * 0.18) * (state.impuesto / 100);
+                            state.tesoro += gananciaImpuesto;
+                            state.felicidad = Math.min(100, state.felicidad + 0.18);
+                            spawnParticle(this.x, this.y - 28, "🛍️+$" + Math.round(gananciaImpuesto), "#43b047");
+                        } else {
+                            // ¡Sufre ESCASEZ en vivo! No pudo comprar
+                            state.felicidad = Math.max(0, state.felicidad - 0.45);
+                            spawnParticle(this.x, this.y - 28, "🚫¡SIN STOCK!", "#e52521");
+                        }
+                        // Regresar a la avenida
+                        this.y = ch * 0.72 + (Math.random() - 0.5) * 35;
+                        this.state = 'strolling';
+                    }
+                }
+            }
+
+            draw() {
+                if (this.state === 'buying') return;
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Animación clara de dar pasos al caminar
+                const stepCycle = Math.sin(this.timer * 1.4);
+                const bounceY = Math.abs(stepCycle) * 3;
+                const leftLegY = stepCycle > 0 ? -3 : 2;
+                const rightLegY = stepCycle > 0 ? 2 : -3;
+
+                // Sombra en el suelo
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-7, 10, 14, 4);
+
+                // Piernas (dando pasos visibles)
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(-5, 2 + leftLegY, 4, 9);
+                ctx.fillRect(1, 2 + rightLegY, 4, 9);
+
+                // Cuerpo / Camisa (más grande)
+                ctx.fillStyle = this.isAngry ? '#c0392b' : (this.hasMoneyBag ? '#2ecc71' : this.shirtColor);
+                ctx.fillRect(-7, -12 - bounceY, 14, 15);
+
+                // Brazos
+                ctx.fillStyle = this.isAngry ? '#962d22' : '#2c3e50';
+                ctx.fillRect(-10, -10 - bounceY, 3, 10);
+                ctx.fillRect(7, -10 - bounceY, 3, 10);
+
+                // Cabeza
+                ctx.fillStyle = '#ffcc99';
+                ctx.fillRect(-6, -23 - bounceY, 12, 11);
+
+                // Cabello o Sombrero de Abundancia
+                if (this.hasMoneyBag) {
+                    // Sombrero de copa de prosperidad
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(-8, -25 - bounceY, 16, 3);
+                    ctx.fillRect(-5, -32 - bounceY, 10, 7);
+                    ctx.fillStyle = '#fbd000';
+                    ctx.fillRect(-5, -27 - bounceY, 10, 2);
+                } else {
+                    ctx.fillStyle = '#4e342e';
+                    ctx.fillRect(-6, -25 - bounceY, 12, 4);
+                }
+
+                // Ojos y expresión facial
+                ctx.fillStyle = '#000';
+                ctx.fillRect(-3, -19 - bounceY, 2, 2);
+                ctx.fillRect(2, -19 - bounceY, 2, 2);
+
+                // INTERACCIÓN 1: MANIFESTANTE CON CARTEL LEGIBLE Y SIGNO DE ENOJO
+                if (this.isAngry) {
+                    // Poste de madera del cartel
+                    ctx.fillStyle = '#8d6e63';
+                    ctx.fillRect(8, -36 - bounceY, 3, 28);
+
+                    // Pancarta grande blanca con borde rojo
+                    const signW = 68;
+                    const signH = 16;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-signW / 2 + 6, -48 - bounceY, signW, signH);
+                    ctx.strokeStyle = '#e52521';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-signW / 2 + 6, -48 - bounceY, signW, signH);
+
+                    // Texto del cartel
+                    ctx.fillStyle = '#c62828';
+                    ctx.font = 'bold 6px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.protestText, 6, -37 - bounceY);
+
+                    // Signo de enojo flotante
+                    ctx.font = '12px Arial';
+                    ctx.fillText("💢", -14, -26 - bounceY);
+                }
+
+                // INTERACCIÓN 2: ABUNDANCIA (BOLSA DE DINERO)
+                if (this.hasMoneyBag && !this.isAngry) {
+                    // Bolsa de dinero dibujada + icono claro
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText("💰", 13, -2 - bounceY);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function spawnParticle(x, y, text, color = '#ffffff') {
+            particles.push({
+                x, y, text, color,
+                vy: -28,
+                life: 1.2
+            });
+        }
+
+        // --- SISTEMA AMPLIADO DE EVENTOS DINÁMICOS Y RELÁMPAGO EN ARAGONIA ---
+        const DYNAMIC_EVENTS = [
+            {
+                id: 'sequia_abasto',
+                title: "🌾 GRAN SEQUÍA EN ARAGONIA: DESABASTO EN TIENDAS",
+                duration: 14,
+                getInstruction: () => {
+                    const impOk = state.crisisActions.importsDone >= 1;
+                    const escOk = state.escasez < 22;
+                    return `<b>Acción obligatoria:</b> Las cosechas fallaron y las tiendas se vaciaron. Realiza al menos <b>1 Importación de Stock</b> [${impOk ? '✓' : 'Pendiente'}] y baja la <b>Escasez a menos de 22%</b> [${escOk ? '✓' : state.escasez + '%'}].`;
+                },
+                applyImmediate: () => {
+                    shops.forEach(s => s.stock = Math.max(0, s.stock - 55));
+                    state.felicidad = Math.max(5, state.felicidad - 8);
+                    logToast("🌾 ¡Sequía severa en Aragonia! Las Empresas pierden su stock de alimentos.", "danger");
+                },
+                checkResolved: () => state.crisisActions.importsDone >= 1 && state.escasez < 22
+            },
+            {
+                id: 'corrida_liquidez',
+                title: "🏦 PÁNICO BANCARIO: CRISIS DE LIQUIDEZ Y CONSUMO",
+                duration: 14,
+                getInstruction: () => {
+                    const printOk = state.crisisActions.printedAmount >= 1500;
+                    const subOk = state.crisisActions.subsidiesGiven >= 1;
+                    return `<b>Acción obligatoria:</b> Los bancos congelaron créditos. <b>Imprime al menos $1,500</b> en el Banco Central [${printOk ? '✓' : '$' + state.crisisActions.printedAmount}] y otorga <b>1 Subsidio Social</b> [${subOk ? '✓' : 'Pendiente'}] para reactivar el consumo.`;
+                },
+                applyImmediate: () => {
+                    state.tesoro -= 900;
+                    state.felicidad = Math.max(5, state.felicidad - 12);
+                    logToast("🏦 ¡Pánico bancario en Aragonia! Falta dinero circulante: imprime billetes y apoya a las familias.", "danger");
+                },
+                checkResolved: () => state.crisisActions.printedAmount >= 1500 && state.crisisActions.subsidiesGiven >= 1
+            },
+            {
+                id: 'invierno_aragonia',
+                title: "❄️ HELADA HISTÓRICA EN ARAGONIA: EMERGENCIA SOCIAL",
+                duration: 15,
+                getInstruction: () => {
+                    const subOk = state.crisisActions.subsidiesGiven >= 1;
+                    const impOk = state.crisisActions.importsDone >= 1;
+                    return `<b>Acción obligatoria:</b> El frío extremo paraliza la ciudad. Entrega <b>1 Subsidio Social</b> a los consumidores [${subOk ? '✓' : 'Pendiente'}] y ejecuta <b>1 Importación de Stock</b> [${impOk ? '✓' : 'Pendiente'}] para abastecer hogares.`;
+                },
+                applyImmediate: () => {
+                    state.felicidad = Math.max(5, state.felicidad - 14);
+                    shops.forEach(s => s.stock = Math.max(0, s.stock - 35));
+                    logToast("❄️ ¡Helada histórica en Aragonia! La población exige Subsidio Social e Importación de suministros.", "danger");
+                },
+                checkResolved: () => state.crisisActions.subsidiesGiven >= 1 && state.crisisActions.importsDone >= 1
+            },
+            {
+                id: 'deuda_soberana',
+                title: "💳 VENCIMIENTO DE DEUDA EXTERNA DE ARAGONIA",
+                duration: 13,
+                getInstruction: () => {
+                    const printOk = state.crisisActions.printedAmount >= 1500 || state.tesoro >= 3500;
+                    const taxOk = state.impuesto >= 20;
+                    return `<b>Acción obligatoria:</b> Pago urgente a acreedores (-$1,600). <b>Imprime al menos $1,500</b> (o reúne $3,500 en el Tesoro) [${printOk ? '✓' : 'Pendiente'}] y sitúa el <b>Impuesto en 20% o más</b> [${taxOk ? '✓' : state.impuesto + '%'}].`;
+                },
+                applyImmediate: () => {
+                    state.tesoro -= 1600;
+                    logToast("💳 ¡Cobro de deuda externa! El Tesoro de Aragonia pierde $1,600 de golpe.", "danger");
+                },
+                checkResolved: () => (state.crisisActions.printedAmount >= 1500 || state.tesoro >= 3500) && state.impuesto >= 20
+            },
+            {
+                id: 'recesion',
+                title: "📉 RECESIÓN COMERCIAL: DESPLOME DE LA DEMANDA",
+                duration: 14,
+                getInstruction: () => {
+                    const taxOk = state.impuesto <= 15;
+                    const subOk = state.crisisActions.subsidiesGiven >= 1 || state.felicidad >= 65;
+                    return `<b>Acción obligatoria:</b> ¡Estimula el mercado interno! Baja el <b>Impuesto a 15% o menos</b> [${taxOk ? '✓' : state.impuesto + '%'}] y aplica <b>1 Subsidio Social</b> (o alcanza 65% de Felicidad) [${subOk ? '✓' : 'Pendiente'}].`;
+                },
+                applyImmediate: () => {
+                    state.felicidad = Math.max(10, state.felicidad - 13);
+                    logToast("📉 ¡Recesión en Aragonia! El consumo se desploma; baja impuestos y subsidia al consumidor.", "danger");
+                },
+                checkResolved: () => state.impuesto <= 15 && (state.crisisActions.subsidiesGiven >= 1 || state.felicidad >= 65)
+            },
+            {
+                id: 'espiral_inflacionaria',
+                title: "🔥 SOBRECALENTAMIENTO MONETARIO Y ESPECULACIÓN",
+                duration: 15,
+                getInstruction: () => {
+                    const bondOk = state.crisisActions.bondsIssued >= 1 || state.crisisActions.shopsAdded >= 1;
+                    const infOk = state.inflacion < 24;
+                    return `<b>Acción obligatoria:</b> Exceso de billetes dispara precios. Emite <b>❄️ Bonos</b> en el Banco Central o <b>Subsidia 1 Empresa</b> [${bondOk ? '✓' : 'Pendiente'}] y reduce la <b>Inflación a menos de 24%</b> [${infOk ? '✓' : state.inflacion.toFixed(1) + '%'}].`;
+                },
+                applyImmediate: () => {
+                    state.inflacion += 9;
+                    state.felicidad = Math.max(10, state.felicidad - 8);
+                    logToast("🔥 ¡Brote inflacionario en Aragonia! Usa Bonos del Banco Central o abre más Empresas.", "danger");
+                },
+                checkResolved: () => (state.crisisActions.bondsIssued >= 1 || state.crisisActions.shopsAdded >= 1 || shops.length >= 4) && state.inflacion < 24
+            },
+            {
+                id: 'invasion',
+                title: "⚔️ ASEDIO EN LA FRONTERA DE ARAGONIA",
+                duration: 15,
+                getInstruction: () => {
+                    const taxOk = state.impuesto >= 20;
+                    const facOk = factories.length >= 3 || state.crisisActions.importsDone >= 1;
+                    return `<b>Acción obligatoria:</b> Rutas cortadas por conflicto. Mantén el <b>Impuesto en 20% o más</b> [${taxOk ? '✓' : state.impuesto + '%'}] y ten <b>3 Fabricantes</b> (o realiza <b>1 Importación de Stock</b>) [${facOk ? '✓' : 'Pendiente'}].`;
+                },
+                applyImmediate: () => {
+                    state.tesoro -= 850;
+                    shops.forEach(s => s.stock = Math.max(0, s.stock - 30));
+                    logToast("⚔️ ¡Tensión fronteriza en Aragonia! Cae el abasto comercial y el Tesoro gasta $850 en defensa.", "danger");
+                },
+                checkResolved: () => state.impuesto >= 20 && (factories.length >= 3 || state.crisisActions.importsDone >= 1)
+            },
+            {
+                id: 'monopolio',
+                title: "🏢 CARTEL DE EMPRESAS Y ABUSO DE PRECIOS",
+                duration: 15,
+                getInstruction: () => {
+                    const shopOk = shops.length >= 4 || state.crisisActions.shopsAdded >= 1;
+                    const subOk = state.crisisActions.subsidiesGiven >= 1 || state.precios <= 115;
+                    return `<b>Acción obligatoria:</b> Pocas tiendas controlan el mercado. Usa <b>Subsidiar Empresa</b> [${shopOk ? '✓' : 'Pendiente'}] y protege a las familias con <b>1 Subsidio Social</b> (o baja Precios a $115) [${subOk ? '✓' : 'Pendiente'}].`;
+                },
+                applyImmediate: () => {
+                    state.inflacion += 5.5;
+                    state.felicidad = Math.max(10, state.felicidad - 10);
+                    logToast("🏢 ¡Prácticas monopólicas en Aragonia! Abre nuevas Empresas y apoya a los consumidores.", "danger");
+                },
+                checkResolved: () => (shops.length >= 4 || state.crisisActions.shopsAdded >= 1) && (state.crisisActions.subsidiesGiven >= 1 || state.precios <= 115)
+            }
+        ];
+
+        // Noticias relámpago entre crisis mayores para mantener el mundo vivo
+        const FLASH_EVENTS = [
+            () => {
+                if (state.enEquilibrio) {
+                    state.tesoro += 450;
+                    logToast("🌟 ¡Auge comercial en Aragonia! La estabilidad del mercado atrae inversión (+$450 al Tesoro).", "success");
+                } else {
+                    shops.forEach(s => s.stock = Math.max(0, s.stock - 18));
+                    logToast("🚚 Retraso logístico en las carreteras de Aragonia: disminuye el stock en tiendas (-18).", "normal");
+                }
+            },
+            () => {
+                if (state.inflacion > 26) {
+                    state.felicidad = Math.max(0, state.felicidad - 5);
+                    logToast("📢 Sindicatos de Aragonia protestan por la pérdida de poder adquisitivo ante la inflación.", "danger");
+                } else {
+                    state.felicidad = Math.min(100, state.felicidad + 5);
+                    logToast("🎭 Festival Cultural de Aragonia: aumenta el optimismo y las compras en la ciudad (+5% Felicidad).", "success");
+                }
+            },
+            () => {
+                if (state.escasez > 28) {
+                    state.inflacion += 2.5;
+                    logToast("🕵️ ¡Mercado negro detectado en Aragonia por la escasez! Los precios informales suben la inflación.", "danger");
+                } else {
+                    shops.forEach(s => s.stock = Math.min(s.maxStock, s.stock + 20));
+                    logToast("🌾 Cosecha excedente en los valles de Aragonia: +20 de stock extra en todas las Empresas.", "success");
+                }
+            },
+            () => {
+                if (state.tesoro < 900) {
+                    logToast("⚠️ Alerta del Banco Central de Aragonia: Reservas bajas. Considera recaudar más o imprimir con cautela.", "normal");
+                } else {
+                    state.tesoro += 300;
+                    logToast("🚢 Aranceles portuarios de Aragonia dejan un superávit inesperado de +$300.", "info");
+                }
+            }
+        ];
+
+        function setCrisisBanner(title, instruction, isResolved = false, timerText = "Meta Activa") {
+            const banner = document.getElementById('crisis-banner');
+            const titleEl = document.getElementById('crisis-title');
+            const instEl = document.getElementById('crisis-instruction');
+            const timerEl = document.getElementById('crisis-timer');
+
+            titleEl.innerHTML = title;
+            instEl.innerHTML = instruction;
+            timerEl.innerText = timerText;
+
+            if (isResolved) {
+                banner.classList.remove('crisis-banner');
+                banner.style.backgroundColor = '#143321';
+                banner.style.borderColor = '#43b047';
+            } else {
+                banner.classList.add('crisis-banner');
+                banner.style.backgroundColor = '#2b1216';
+                banner.style.borderColor = '#e52521';
+            }
+        }
+
+        function refreshActiveCrisisBanner() {
+            if (!state.activeCrisis) return;
+            const inst = state.activeCrisis.getInstruction ? state.activeCrisis.getInstruction() : state.activeCrisis.instruction;
+            const timerTxt = state.crisisTimeLeft > 0 ? `⏳ Plazo: ${state.crisisTimeLeft}m` : `¡Urgente!`;
+            setCrisisBanner(state.activeCrisis.title, inst, false, timerTxt);
+        }
+
+        function triggerNextDynamicCrisis() {
+            resetCrisisActions();
+            const ev = DYNAMIC_EVENTS[state.eventQueueIndex % DYNAMIC_EVENTS.length];
+            state.eventQueueIndex++;
+            state.activeCrisis = ev;
+            state.crisisTimeLeft = ev.duration || 14;
+            state.monthsSinceLastCrisis = 0;
+            ev.applyImmediate();
+            refreshActiveCrisisBanner();
+        }
+
+        // --- CÁLCULO MACROECONÓMICO EN TIEMPO REAL ---
+        let monthTimer = 0;
+
+        function recalculateMacro() {
+            // 1. Calcular Oferta (Fabricantes + Stock disponible en Empresas)
+            const totalStock = shops.reduce((acc, s) => acc + s.stock, 0);
+            state.oferta = Math.min(100, Math.round(factories.length * 22 + (totalStock / Math.max(1, shops.length)) * 0.45));
+
+            // 2. Calcular Demanda (Casas/Población + Poder Adquisitivo según Impuestos e Inflación)
+            const baseDemand = houses.length * 14 + 28;
+            const taxPenalty = (state.impuesto - 15) * 0.9;
+            const infPenalty = state.inflacion * 0.25;
+            state.demanda = Math.max(15, Math.min(100, Math.round(baseDemand - taxPenalty - infPenalty)));
+
+            // 3. Calcular Escasez (cuando Demanda > Oferta o tiendas sin stock)
+            const emptyShops = shops.filter(s => s.stock <= 5).length;
+            const emptyRatio = shops.length > 0 ? (emptyShops / shops.length) * 45 : 60;
+            const gap = Math.max(0, state.demanda - state.oferta);
+            state.escasez = Math.min(100, Math.max(0, Math.round(gap * 1.15 + emptyRatio)));
+
+            // 4. Equilibrio del Mercado
+            state.enEquilibrio = (Math.abs(state.oferta - state.demanda) <= 12 && state.escasez < 20);
+
+            // 5. Nivel de Precios (afectado por escasez, competencia e inflación)
+            const competitionDiscount = shops.length * 6;
+            state.precios = Math.max(60, Math.round(100 + state.escasez * 0.8 + state.inflacion * 0.9 - competitionDiscount));
+        }
+
+        function updateMonthlyEconomy(dt) {
+            if (!state.isRunning || state.speed === 0) return;
+
+            recalculateMacro();
+            monthTimer += dt * state.speed;
+
+            // Cada 2.2 segundos en x1 equivale a 1 Mes
+            if (monthTimer >= 2200) {
+                monthTimer = 0;
+                state.mes++;
+
+                if (state.mes > 12) {
+                    state.mes = 1;
+                    state.ano++;
+                    onNewYear();
+                }
+
+                // Efectos mensuales de Escasez, Impuestos e Inflación
+                if (state.escasez > 30) {
+                    state.inflacion += 0.7;
+                    state.felicidad -= 1.2;
+                } else if (state.enEquilibrio) {
+                    state.inflacion = Math.max(1.5, state.inflacion - 0.6);
+                    state.felicidad = Math.min(100, state.felicidad + 1.0);
+                }
+
+                if (state.impuesto > 25) {
+                    state.felicidad -= (state.impuesto - 25) * 0.18;
+                }
+
+                if (state.inflacion > 25) {
+                    state.felicidad -= (state.inflacion - 20) * 0.08;
+                }
+
+                // Evaluar si la crisis activa ya fue resuelta por el jugador
+                if (state.activeCrisis) {
+                    state.crisisTimeLeft--;
+                    refreshActiveCrisisBanner();
+
+                    if (state.activeCrisis.checkResolved()) {
+                        state.tesoro += 750;
+                        state.felicidad = Math.min(100, state.felicidad + 9);
+                        logToast("🏅 ¡Crisis superada en Aragonia! Recibes +$750 de bono fiscal y +9% de Felicidad.", "success");
+                        setCrisisBanner(
+                            "✅ CRISIS SUPERADA EN ARAGONIA",
+                            "Excelente gestión ministerial. Mantén la <b>Oferta y Demanda en Equilibrio</b> mientras te preparas para el próximo desafío.",
+                            true,
+                            "✓ +$750 Bono"
+                        );
+                        state.activeCrisis = null;
+                        state.monthsSinceLastCrisis = 0;
+                    } else if (state.crisisTimeLeft <= 0) {
+                        // El jugador no resolvió la crisis a tiempo
+                        state.felicidad = Math.max(0, state.felicidad - 10);
+                        state.inflacion += 4;
+                        logToast("❌ ¡Expiró el plazo de la crisis! El descontento y la inflación aumentan en Aragonia.", "danger");
+                        setCrisisBanner(
+                            "⚠️ PLAZO EXPIRADO: COSTO ECONÓMICO SUFRIDO",
+                            "No cumpliste los requisitos a tiempo (-10% Felicidad, +4% Inflación). Estabiliza Aragonia antes del próximo evento.",
+                            true,
+                            "Expirado"
+                        );
+                        state.activeCrisis = null;
+                        state.monthsSinceLastCrisis = 0;
+                    } else if (state.mes % 3 === 0) {
+                        // Desgaste leve mientras la crisis sigue activa
+                        state.felicidad = Math.max(0, state.felicidad - 1.2);
+                    }
+                } else {
+                    state.monthsSinceLastCrisis++;
+                    // Disparar nueva crisis cada 7 meses de calma para mantener el juego muy dinámico
+                    if (state.monthsSinceLastCrisis >= 7) {
+                        triggerNextDynamicCrisis();
+                    }
+                }
+
+                // Eventos relámpago adicionales cada 5 meses
+                if (state.mes % 5 === 0 && Math.random() < 0.75) {
+                    const flashFn = FLASH_EVENTS[Math.floor(Math.random() * FLASH_EVENTS.length)];
+                    flashFn();
+                }
+
+                // Bonificación por mantener racha de Equilibrio en Aragonia
+                if (state.enEquilibrio) {
+                    state.rachaEquilibrio++;
+                    if (state.rachaEquilibrio % 4 === 0) {
+                        state.tesoro += 350;
+                        logToast("⚖️ ¡Dividendo de Equilibrio en Aragonia! +$350 al Tesoro por estabilidad macroeconómica.", "success");
+                    }
+                } else {
+                    state.rachaEquilibrio = 0;
+                }
+
+                // Crecimiento de Casas con la Prosperidad
+                if (state.felicidad >= 65 && state.escasez < 22 && houses.length < 8 && state.mes % 4 === 0) {
+                    houses.push(new House(houses.length));
+                    citizens.push(new Citizen(citizens.length));
+                    citizens.push(new Citizen(citizens.length));
+                    logToast("🏠 ¡Aragonia prospera! Se construyó una nueva Casa y llegan más consumidores.", "success");
+                }
+
+                // Control de bancarrota
+                if (state.tesoro < 0) {
+                    state.mesesBancarrota++;
+                } else {
+                    state.mesesBancarrota = 0;
+                }
+
+                state.felicidad = Math.max(0, Math.min(100, state.felicidad));
+                state.inflacion = Math.max(0, state.inflacion);
+
+                updateUI();
+                checkEndConditions();
+            }
+        }
+
+        function onNewYear() {
+            if (state.ano > 20) return;
+            logToast(`📅 Año ${state.ano}/20 en Aragonia. Tesoro: $${Math.round(state.tesoro)}.`, "info");
+        }
+
+        function checkEndConditions() {
+            if (state.felicidad <= 0) {
+                triggerGameOver(false, "💥 ¡REVOLUCIÓN EN ARAGONIA!", "La Felicidad de los Consumidores cayó a 0%. Los manifestantes tomaron el Ministerio de Economía de Aragonia debido al desabasto y el malestar social.");
+            } else if (state.inflacion >= 100) {
+                triggerGameOver(false, "💸 ¡HIPERINFLACIÓN EN ARAGONIA!", "La moneda de Aragonia perdió todo su valor por el exceso de billetes impresos y la escasez crónica. El Mercado colapsó por completo.");
+            } else if (state.mesesBancarrota >= 24) {
+                triggerGameOver(false, "🏦 ¡BANCARROTA ESTATAL!", "El Tesoro de Aragonia permaneció en números rojos durante 2 años completos (24 meses). El Estado no pudo pagar sus deudas.");
+            } else if (state.ano > 20) {
+                const isGold = state.felicidad >= 70 && state.inflacion < 20 && houses.length >= 5;
+                triggerGameOver(
+                    true,
+                    isGold ? "🏆 ¡FINAL DE ORO: ARAGONIA POTENCIA!" : "🎖️ ¡MANDATO CUMPLIDO EN ARAGONIA!",
+                    isGold
+                        ? "¡Gobernaste Aragonia durante 20 años de forma magistral! Erradicaste la escasez, multiplicaste las casas de la ciudad y lograste el Equilibrio Macroeconómico."
+                        : "Sobreviviste los 20 años al frente del Ministerio de Aragonia superando sequías, corridas bancarias, invasiones y crisis de abasto."
+                );
+            }
+        }
+
+        function triggerGameOver(victory, title, desc) {
+            state.isRunning = false;
+            const screen = document.getElementById('end-screen');
+            const titleEl = document.getElementById('end-title');
+            titleEl.innerText = title;
+            titleEl.style.color = victory ? '#43b047' : '#e52521';
+            document.getElementById('end-desc').innerText = desc;
+
+            document.getElementById('end-stats').innerHTML = `
+                <div>🏛️ Tesoro Final: <b>$${Math.round(state.tesoro)}</b></div>
+                <div>😊 Felicidad: <b>${Math.round(state.felicidad)}%</b></div>
+                <div>📈 Inflación: <b>${state.inflacion.toFixed(1)}%</b></div>
+                <div>🏠 Casas Construidas: <b>${houses.length}</b></div>
+                <div>🏭 Fabricantes: <b>${factories.length}</b></div>
+                <div>🏪 Empresas: <b>${shops.length}</b></div>
+            `;
+
+            screen.classList.remove('hidden');
+            screen.classList.add('flex');
+        }
+
+        function updateUI() {
+            recalculateMacro();
+
+            document.getElementById('ui-ano').innerText = Math.min(20, state.ano);
+            document.getElementById('ui-mes').innerText = state.mes;
+
+            const tesoroEl = document.getElementById('ui-tesoro');
+            tesoroEl.innerText = `$${Math.round(state.tesoro)}`;
+            tesoroEl.style.color = state.tesoro < 0 ? '#e52521' : '#43b047';
+
+            const precioTag = state.precios > 125 ? '(Caros)' : state.precios < 90 ? '(Bajos)' : '(Estables)';
+            document.getElementById('ui-precios').innerText = `$${state.precios} ${precioTag}`;
+
+            document.getElementById('ui-impuesto').innerText = `${state.impuesto}%`;
+            document.getElementById('ui-competencia').innerText = `${factories.length} Fáb. / ${shops.length} Emp. / ${houses.length} Casas`;
+
+            // Oferta y Demanda
+            document.getElementById('ui-oferta').innerText = state.oferta;
+            document.getElementById('ui-demanda').innerText = state.demanda;
+            const totalOD = Math.max(1, state.oferta + state.demanda);
+            document.getElementById('bar-oferta').style.width = `${(state.oferta / totalOD) * 100}%`;
+            document.getElementById('bar-demanda').style.width = `${(state.demanda / totalOD) * 100}%`;
+
+            const eqBadge = document.getElementById('ui-equilibrio-badge');
+            if (state.enEquilibrio) {
+                eqBadge.innerText = "¡EN EQUILIBRIO!";
+                eqBadge.style.backgroundColor = "#43b047";
+            } else {
+                eqBadge.innerText = state.oferta < state.demanda ? "DÉFICIT DE OFERTA" : "EXCESO DE OFERTA";
+                eqBadge.style.backgroundColor = "#e52521";
+            }
+
+            // Escasez
+            const escLabel = state.escasez > 35 ? '(Crítica)' : state.escasez > 15 ? '(Moderada)' : '(Baja)';
+            document.getElementById('ui-escasez').innerText = `${state.escasez}% ${escLabel}`;
+            document.getElementById('bar-escasez').style.width = `${state.escasez}%`;
+
+            // Inflación
+            document.getElementById('ui-inflacion').innerText = `${state.inflacion.toFixed(1)}%`;
+            document.getElementById('bar-inflacion').style.width = `${Math.min(100, state.inflacion)}%`;
+
+            // Felicidad
+            document.getElementById('ui-felicidad').innerText = `${Math.round(state.felicidad)}%`;
+            const felBar = document.getElementById('bar-felicidad');
+            felBar.style.width = `${state.felicidad}%`;
+            felBar.style.backgroundColor = state.felicidad > 60 ? '#43b047' : state.felicidad > 35 ? '#fbd000' : '#e52521';
+
+            // Contadores de la barra superior del canvas
+            document.getElementById('lbl-houses').innerText = houses.length;
+            document.getElementById('lbl-factories').innerText = factories.length;
+            document.getElementById('lbl-shops').innerText = shops.length;
+            document.getElementById('lbl-protestors').innerText = citizens.filter(c => c.isAngry).length;
+
+            if (state.activeCrisis) {
+                refreshActiveCrisisBanner();
+            }
+        }
+
+        // --- BOTONES DE POLÍTICA ECONÓMICA ---
+        document.getElementById('btn-tax-down').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (state.impuesto >= 5) {
+                state.impuesto -= 5;
+                state.felicidad = Math.min(100, state.felicidad + 3);
+                logToast(`📉 Impuesto en Aragonia reducido al ${state.impuesto}%. Mejora el consumo.`, 'success');
+                updateUI();
+            }
+        });
+
+        document.getElementById('btn-tax-up').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (state.impuesto <= 55) {
+                state.impuesto += 5;
+                state.felicidad = Math.max(0, state.felicidad - 4);
+                logToast(`📈 Impuesto en Aragonia subido al ${state.impuesto}%. Mayor recaudación, menor demanda.`, 'danger');
+                updateUI();
+            }
+        });
+
+        document.getElementById('btn-add-factory').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (factories.length >= 4) {
+                logToast("🏭 Aragonia ya cuenta con el máximo de 4 Fabricantes industriales.", "info");
+                return;
+            }
+            if (state.tesoro < 1500) {
+                logToast("❌ Necesitas $1,500 en el Tesoro(o imprimir dinero) para abrir un Fabricante.", "danger");
+                return;
+            }
+            state.tesoro -= 1500;
+            state.crisisActions.factoriesAdded++;
+            factories.push(new Factory(factories.length));
+            logToast("🏭 ¡Nuevo Fabricante inaugurado en Aragonia! Aumenta la producción de Oferta.", "success");
+            updateUI();
+        });
+
+        document.getElementById('btn-add-shop').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (shops.length >= 5) {
+                logToast("🏪 El mercado de Aragonia ya tiene el máximo de 5 Empresas.", "info");
+                return;
+            }
+            if (state.tesoro < 1200) {
+                logToast("❌ Necesitas $1,200 en el Tesoro para subsidiar una nueva Empresa.", "danger");
+                return;
+            }
+            state.tesoro -= 1200;
+            state.crisisActions.shopsAdded++;
+            const newShop = new Shop(shops.length);
+            newShop.stock = 75;
+            shops.push(newShop);
+            state.inflacion = Math.max(0, state.inflacion - 2);
+            logToast("🏪 ¡Nueva Empresa abierta en Aragonia! Más competencia y mejores precios.", "success");
+            updateUI();
+        });
+
+        document.getElementById('btn-subsidy-people').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (state.tesoro < 1000) {
+                logToast("❌ Tesoro insuficiente ($1,000) para otorgar Subsidio Social. Puedes imprimir liquidez si es urgente.", "danger");
+                return;
+            }
+            state.tesoro -= 1000;
+            state.crisisActions.subsidiesGiven++;
+            state.felicidad = Math.min(100, state.felicidad + 12);
+            citizens.forEach(c => {
+                if (Math.random() < 0.4) spawnParticle(c.x, c.y - 25, "🎁+Subsidio", "#43b047");
+            });
+            logToast("🎁 ¡Subsidio Social entregado a los consumidores de Aragonia! Felicidad +12%.", "success");
+            updateUI();
+        });
+
+        document.getElementById('btn-import-goods').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (state.tesoro < 900) {
+                logToast("❌ Necesitas $900 para importar abasto de emergencia.", "danger");
+                return;
+            }
+            state.tesoro -= 900;
+            state.crisisActions.importsDone++;
+            shops.forEach(s => {
+                s.stock = Math.min(s.maxStock, s.stock + 60);
+                const pos = s.getPos();
+                spawnParticle(pos.x + 10, pos.y - 10, "🚢+60 Stock", "#fbd000");
+            });
+            logToast("🚢 ¡Abasto importado a Aragonia! Todas las Empresas llenaron sus estantes (+60 Stock).", "info");
+            updateUI();
+        });
+
+        document.getElementById('btn-print-1k').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            state.tesoro += 1500;
+            state.inflacion += 3.5;
+            state.crisisActions.printedAmount += 1500;
+            spawnParticle(cw - 95, 55, "💵+$1500", "#fbd000");
+            logToast("💵 El Banco Central de Aragonia imprimió $1,500. Inflación +3.5%.", "normal");
+            updateUI();
+        });
+
+        document.getElementById('btn-print-5k').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            state.tesoro += 4500;
+            state.inflacion += 12.0;
+            state.crisisActions.printedAmount += 4500;
+            state.felicidad = Math.max(0, state.felicidad - 3);
+            spawnParticle(cw - 95, 55, "🖨️+$4500", "#e52521");
+            logToast("⚠️ ¡Emisión masiva de $4,500 en Aragonia! Liquidez inmediata, pero la Inflación sube +12%.", "danger");
+            updateUI();
+        });
+
+        document.getElementById('btn-bonds').addEventListener('click', () => {
+            if (!state.isRunning) return;
+            if (state.tesoro < 900) {
+                logToast("❌ Necesitas $900 en el Tesoro para absorber billetes con Bonos.", "danger");
+                return;
+            }
+            state.tesoro -= 900;
+            state.inflacion = Math.max(0, state.inflacion - 6.0);
+            state.crisisActions.bondsIssued++;
+            spawnParticle(cw - 95, 55, "❄️-6% Inf.", "#009bd6");
+            logToast("❄️ Bonos emitidos por el Banco Central: se retira exceso de billetes y la Inflación baja -6%.", "success");
+            updateUI();
+        });
+
+        // Controles de velocidad
+        function changeSpeed(newSpeed, btnId) {
+            state.speed = newSpeed;
+            ['btn-pause', 'btn-x1', 'btn-x2', 'btn-x4'].forEach(id => {
+                document.getElementById(id).classList.remove('active-speed');
+            });
+            document.getElementById(btnId).classList.add('active-speed');
+        }
+        document.getElementById('btn-pause').addEventListener('click', () => changeSpeed(0, 'btn-pause'));
+        document.getElementById('btn-x1').addEventListener('click', () => changeSpeed(1, 'btn-x1'));
+        document.getElementById('btn-x2').addEventListener('click', () => changeSpeed(2, 'btn-x2'));
+        document.getElementById('btn-x4').addEventListener('click', () => changeSpeed(4, 'btn-x4'));
+
+        // --- RENDERIZADO Y LOOP DEL CANVAS ---
+        function resizeCanvas() {
+            cw = canvasContainer.clientWidth || 800;
+            ch = canvasContainer.clientHeight || 420;
+            canvas.width = cw;
+            canvas.height = ch;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawWorld(dt) {
+            // 1. Cielo / Zona Residencial Superior
+            ctx.fillStyle = '#3b7a57';
+            ctx.fillRect(0, 0, cw, ch);
+
+            // Franja residencial (donde están las Casas y el Banco Central de Aragonia)
+            ctx.fillStyle = '#4e8c64';
+            ctx.fillRect(0, 0, cw, 96);
+            ctx.fillStyle = '#d2b48c';
+            ctx.fillRect(0, 86, cw, 8); // Vereda residencial
+
+            // Etiqueta de zona residencial
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(8, 6, 265, 14);
+            ctx.fillStyle = '#fbd000';
+            ctx.font = '7px "Press Start 2P"';
+            ctx.fillText("CIUDAD DE ARAGONIA (CASAS)", 14, 16);
+
+            // Edificio del Banco Central / Ministerio de Aragonia (arriba a la derecha)
+            const bankX = cw - 110;
+            const bankY = 22;
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(bankX + 4, bankY + 4, 96, 62);
+            ctx.fillStyle = '#cfd8dc';
+            ctx.fillRect(bankX, bankY + 12, 96, 50);
+            // Frontón clásico
+            ctx.fillStyle = '#90a4ae';
+            ctx.fillRect(bankX - 4, bankY + 6, 104, 8);
+            ctx.fillStyle = '#fbd000';
+            ctx.fillRect(bankX + 8, bankY, 80, 6);
+            // Columnas
+            ctx.fillStyle = '#eceff1';
+            for (let col = 0; col < 4; col++) {
+                ctx.fillRect(bankX + 10 + col * 22, bankY + 20, 8, 38);
+            }
+            ctx.fillStyle = '#1e2238';
+            ctx.fillRect(bankX + 36, bankY + 38, 24, 24);
+            ctx.fillStyle = '#12131c';
+            ctx.font = '6px "Press Start 2P"';
+            ctx.fillText("BANCO CENTRAL", bankX + 8, bankY + 13);
+
+            // 2. Zona Industrial (Izquierda) y Comercial (Derecha)
+            const midY = ch * 0.44;
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(8, midY - 62, 195, 14);
+            ctx.fillStyle = '#81d4fa';
+            ctx.fillText("ZONA DE FABRICANTES", 14, midY - 52);
+
+            const shopLabelX = Math.max(260, cw * 0.42);
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(shopLabelX, midY - 62, 230, 14);
+            ctx.fillStyle = '#a5d6a7';
+            ctx.fillText("EMPRESAS / MERCADO", shopLabelX + 6, midY - 52);
+
+            // 3. Avenida Principal (Abajo)
+            const roadTop = ch * 0.58;
+            ctx.fillStyle = '#95a5a6';
+            ctx.fillRect(0, roadTop - 10, cw, 10); // Acera
+            ctx.fillStyle = '#34495e';
+            ctx.fillRect(0, roadTop, cw, ch - roadTop); // Asfalto
+
+            // Líneas amarillas de la avenida
+            ctx.fillStyle = '#f1c40f';
+            for (let x = 10; x < cw; x += 48) {
+                ctx.fillRect(x, roadTop + (ch - roadTop) * 0.5, 24, 4);
+            }
+
+            // 4. Dibujar Casas
+            houses.forEach(h => h.draw());
+
+            // 5. Actualizar y dibujar Fabricantes y Empresas
+            factories.forEach(f => {
+                if (state.isRunning) f.update(dt);
+                f.draw();
+            });
+            shops.forEach(s => s.draw());
+
+            // 6. Cajas de suministro (Oferta viajando de Fabricante a Empresa)
+            for (let i = cargos.length - 1; i >= 0; i--) {
+                const c = cargos[i];
+                if (!c.target || !shops.includes(c.target)) {
+                    cargos.splice(i, 1);
+                    continue;
+                }
+                const tPos = c.target.getPos();
+                const tx = tPos.x + 25;
+                const ty = tPos.y + 20;
+                const dx = tx - c.x;
+                const dy = ty - c.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < 10) {
+                    c.target.stock = Math.min(c.target.maxStock, c.target.stock + c.amount);
+                    spawnParticle(tx, ty - 10, "+Stock", "#009bd6");
+                    cargos.splice(i, 1);
+                } else {
+                    const step = 110 * (dt / 1000) * state.speed;
+                    c.x += (dx / dist) * step;
+                    c.y += (dy / dist) * step;
+                    ctx.font = '14px Arial';
+                    ctx.fillText("📦", c.x, c.y);
+                }
+            }
+
+            // 7. Ordenar ciudadanos por eje Y para profundidad y dibujarlos
+            citizens.sort((a, b) => a.y - b.y);
+            citizens.forEach(c => {
+                if (state.isRunning) c.update(dt);
+                c.draw();
+            });
+
+            // 8. Partículas flotantes
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                if (state.isRunning) {
+                    const delta = (dt / 1000) * state.speed;
+                    p.y += p.vy * delta;
+                    p.life -= delta;
+                }
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.font = 'bold 8px "Press Start 2P"';
+                ctx.fillText(p.text, p.x, p.y);
+                ctx.globalAlpha = 1.0;
+
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function startGame() {
+            resizeCanvas();
+
+            // Estado inicial en DESEQUILIBRIO deliberado para que el jugador actúe desde el minuto 1
+            state.isRunning = true;
+            state.speed = 1;
+            state.ano = 1,
+            state.mes = 1;
+            state.tesoro = 3200;
+            state.impuesto = 30;      // Impuesto inicial alto
+            state.inflacion = 18.0;
+            state.felicidad = 48.0;
+            state.rachaEquilibrio = 0;
+            state.mesesBancarrota = 0;
+            state.monthsSinceLastCrisis = 0;
+            state.eventQueueIndex = 0;
+            resetCrisisActions();
+
+            houses = [];
+            factories = [];
+            shops = [];
+            citizens = [];
+            cargos = [];
+            particles = [];
+
+            // Iniciar con 3 Casas fijas, 1 Fabricante y 2 Empresas con bajo stock
+            for (let i = 0; i < 3; i++) houses.push(new House(i));
+            factories.push(new Factory(0));
+            shops.push(new Shop(0));
+            shops.push(new Shop(1));
+
+            // Iniciar con 14 ciudadanos en el mapa
+            for (let i = 0; i < 14; i++) {
+                citizens.push(new Citizen(i));
+            }
+
+            // Configurar la misión de Desequilibrio Inicial en Aragonia
+            state.crisisTimeLeft = 14;
+            state.activeCrisis = {
+                id: 'initial_imbalance',
+                title: "⚠️ CRISIS INICIAL EN ARAGONIA: DESEQUILIBRIO Y ESCASEZ",
+                getInstruction: () => {
+                    const taxOk = state.impuesto <= 20;
+                    const supplyOk = factories.length >= 2 || state.crisisActions.importsDone >= 1 || state.escasez < 20;
+                    return `<b>Acción requerida:</b> Aragonia inicia en desequilibrio. Baja el <b>Impuesto a 20% o menos</b> [${taxOk ? '✓' : state.impuesto + '%'}] y construye un <b>Nuevo Fabricante</b> o <b>Importa Stock</b> [${supplyOk ? '✓' : 'Pendiente'}].`;
+                },
+                checkResolved: () => state.impuesto <= 20 && (factories.length >= 2 || state.crisisActions.importsDone >= 1 || state.escasez < 20)
+            };
+            refreshActiveCrisisBanner();
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('flex');
+
+            changeSpeed(1, 'btn-x1');
+            updateUI();
+
+            logToast("🏛️ ¡Asumiste el Ministerio de Aragonia! Baja el Impuesto y abastece las tiendas para superar la primera crisis.", "info");
+        }
+
+        document.getElementById('btn-start-game').addEventListener('click', startGame);
+        document.getElementById('btn-restart-game').addEventListener('click', startGame);
+
+        let lastTime = performance.now();
+        function mainLoop(now) {
+            const dt = Math.min(100, now - lastTime);
+            lastTime = now;
+
+            if (state.isRunning) {
+                updateMonthlyEconomy(dt);
+            }
+            drawWorld(dt);
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        window.onload = () => {
+            resizeCanvas();
+            // Pre-poblar escena de fondo antes de iniciar
+            for (let i = 0; i < 3; i++) houses.push(new House(i));
+            factories.push(new Factory(0));
+            shops.push(new Shop(0));
+            shops.push(new Shop(1));
+            requestAnimationFrame(mainLoop);
+        };
+    </script>
+</body>
+</html>
